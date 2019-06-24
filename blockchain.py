@@ -49,9 +49,9 @@ class Blockchain:
         """
         candidates = self.read_file_list()
         #print("candidates "+candidates)
-        self.create_foundation_block(previous_hash='1', proof='100', candidates=candidates)
+        self.create_foundation_block(previous_hash='1', proof=100, candidates=candidates)
 
-    def register_node(self, address: str) -> None:
+    def register_node(self, address : str) -> None:
         """
         Add a new node to the list of __nodes
 
@@ -69,7 +69,7 @@ class Blockchain:
         :return: 合法, 否则False
         """
 
-        last_block = chain[0]
+        last_block = chain[0]#初始化
         current_index = 1
 
         while current_index < len(chain):
@@ -102,7 +102,7 @@ class Blockchain:
             response = requests.get(f'http://{node}/__chain')
             if response.status_code == 200:
                 length = response.json()['length']
-                chain = response.json()['__chain']
+                chain = response.json()['chain']
                 # 检查链的长度以及合法性
                 if length > max_length and self.valid_chain(chain):
                     max_length = length
@@ -121,7 +121,7 @@ class Blockchain:
         :param candidates:
         :return:
         """
-        return self.new_block(proof, previous_hash, candidates = candidates, foundation="true")
+        return self.new_block(proof, previous_hash, candidates=candidates, foundation="true")
 
     def new_block(self, proof: int, previous_hash: Optional[str], vote: str = None, candidates: str = None, foundation = "false", ) -> None:
         """
@@ -134,7 +134,7 @@ class Blockchain:
         """
         if foundation == "true":
             if len(self.__chain) != 0:
-                print ("Foundation Block Exists Already!")
+                print("Foundation Block Exists Already!")
                 return
             else:
                 print("candidates " + candidates)
