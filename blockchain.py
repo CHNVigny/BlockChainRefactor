@@ -7,6 +7,7 @@ from uuid import uuid4
 from queue import Queue
 import requests
 from flask import Flask, jsonify, request
+import pysnooper
 
 
 class Blockchain:
@@ -291,6 +292,7 @@ blockchain.send_candidates()
 print(str(blockchain.getblock(-1)))
 print(blockchain.hash(blockchain.getblock(0)))
 
+@pysnooper.snoop('./log/file.log')
 def new_vote(vote: str) -> None:
     last_block = blockchain.last_block
     last_proof = last_block['proof']
@@ -400,7 +402,11 @@ if __name__ == '__main__':
     while(True):
         vote = input("请输入候选人：")
         if vote in blockchain.candidates:
+            start = time()
             new_vote(vote)
+            end = time()
+            t = end - start
+            print("执行时间：" + str(t))
         elif vote == "exit":
             print("投票结束！")
             break
