@@ -11,17 +11,31 @@ from flask import Flask, jsonify, request
 
 class Blockchain:
     def __init__(self):
-        #self.__current_votes = Queue()
+        # self.__current_votes = Queue()
         self.__chain = []
         self.__nodes = set()
         self.__candidates = set()
-        #self._es_block = 0
+        # self._es_block = 0
 
         # 创建创世块
-        #self.new_block(previous_hash='1', proof=100)
+        # self.new_block(previous_hash='1', proof=100)
+
+    @property
+    def chain(self) -> List:
+        return self.__chain
+
+    @property
+    def candidates(self) -> Set:
+        return self.__candidates
+
+    def getblock(self, index: int) -> Dict[str, Any]:
+        if index >= len(self.__chain) or index < -len(self.__chain):
+            return None
+        else:
+            return self.__chain[index]
 
     # @staticmethod
-    def read_file_list(filename: str='candidates.txt', mode: str='r', encoding: str='UTF-8') -> str:
+    def read_file_list(self, filename: str = 'candidates.txt', mode: str = 'r', encoding: str = 'UTF-8') -> str:
         """
         read candidate file
         :param fileName:候选人名单（默认candidates.txt）
@@ -36,10 +50,12 @@ class Blockchain:
         for eachLine in f.readlines():
             line = eachLine.strip().replace('\n', '')
             candidates.add(line)
+        self.__candidates = candidates
         for cadidate in candidates:
             result[str(candidateindex)] = cadidate
             candidateindex += 1
-        #print("candidates " + json.dumps(result))
+        # print("candidates " + json.dumps(result))
+        f.close()
         return json.dumps(result)
 
     def send_candidates(self):
@@ -48,10 +64,10 @@ class Blockchain:
         :return:
         """
         candidates = self.read_file_list()
-        #print("candidates "+candidates)
+        # print("candidates "+candidates)
         self.create_foundation_block(previous_hash='1', proof=100, candidates=candidates)
 
-    def register_node(self, address : str) -> None:
+    def register_node(self, address: str) -> None:
         """
         Add a new node to the list of __nodes
 
@@ -69,7 +85,7 @@ class Blockchain:
         :return: 合法, 否则False
         """
 
-        last_block = chain[0]#初始化
+        last_block = chain[0]  # 初始化
         current_index = 1
 
         while current_index < len(chain):
@@ -123,7 +139,8 @@ class Blockchain:
         """
         return self.new_block(proof, previous_hash, candidates=candidates, foundation="true")
 
-    def new_block(self, proof: int, previous_hash: Optional[str], vote: str = None, candidates: str = None, foundation = "false", ) -> None:
+    def new_block(self, proof: int, previous_hash: Optional[str], vote: str = None, candidates: str = None,
+                  foundation="false", ) -> None:
         """
         生成新块
 
@@ -162,6 +179,7 @@ class Blockchain:
             # elf.current_votes = []
 
             self.__chain.append(block)
+            print(self.chain)
             return block
 
     def new_vote_block(self, vote: str, factor: str) -> int:
@@ -180,7 +198,7 @@ class Blockchain:
             'index': len(self.__chain) + 1,
             'timestamp': time(),
             'vote': vote,  # self.__current_votes.get(),
-            'factor':factor,
+            'factor': factor,
             'proof': proof,
             'previous_hash': previous_hash or self.hash(self.__chain[-1]),
         }
@@ -270,9 +288,14 @@ node_identifier = str(uuid4()).replace('-', '')
 # Instantiate the Blockchain
 blockchain = Blockchain()
 blockchain.send_candidates()
-print(str(blockchain.__chain[-1]))
-print(blockchain.hash(blockchain.__chain[0]))
+print(str(blockchain.getblock(-1)))
+print(blockchain.hash(blockchain.getblock(0)))
 
+def new_vote(vote: str) -> None:
+    last_block = blockchain.last_block
+    last_proof = last_block['proof']
+    proof = blockchain.proof_of_work(last_proof)
+    blockchain.new_block(proof, None, vote,)#这里的previous_hash这个参数完全可以穿一个None，可以自动计算的。
 
 @app.route('/mine', methods=['GET'])
 def mine():
@@ -321,8 +344,8 @@ def new_transaction():
 @app.route('/__chain', methods=['GET'])
 def full_chain():
     response = {
-        '__chain': blockchain.__chain,
-        'length': len(blockchain.__chain),
+        'chain': blockchain.chain,
+        'length': len(blockchain.chain),
     }
     return jsonify(response), 200
 
@@ -366,11 +389,21 @@ def consensus():
 
 
 if __name__ == '__main__':
-    from argparse import ArgumentParser
+    # from argparse import ArgumentParser
+    #
+    # parser = ArgumentParser()
+    # parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
+    # args = parser.parse_args()
+    # port = args.port
+    #
+    # app.run(host='127.0.0.1', port=port)
+    while(True):
+        vote = input("请输入候选人：")
+        if vote in blockchain.candidates:
+            new_vote(vote)
+        elif vote == "exit":
+            print("投票结束！")
+            break
+        else:
+            print("无效候选人！")
 
-    parser = ArgumentParser()
-    parser.add_argument('-p', '--port', default=5000, type=int, help='port to listen on')
-    args = parser.parse_args()
-    port = args.port
-
-    app.run(host='127.0.0.1', port=port)
